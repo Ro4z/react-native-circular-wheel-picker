@@ -10,59 +10,57 @@ import {
   ViewStyle,
 } from "react-native";
 
+type dataType = {
+  value: number | string;
+  label: number | string;
+};
+
 interface WheelNumberPickerProps {
   minValue: number;
   maxValue: number;
+  data: dataType[];
   height: number;
   textStyle?: StyleProp<TextStyle>;
   selectedTextStyle?: StyleProp<TextStyle>;
   unselectedTextStyle?: StyleProp<TextStyle>;
   dividerWidth?: ViewStyle["borderBottomWidth"];
   dividerColor?: ViewStyle["borderBottomColor"];
-  selectedValue?: number;
-  onValueChange?: (value: number) => void;
+  selectedValue?: number | string;
+  onValueChange?: (value: number | string) => void;
 }
 
 function WheelNumberPicker({
-  minValue = 1,
-  maxValue = 5,
   height = 25,
   textStyle,
   selectedTextStyle,
   unselectedTextStyle,
   dividerWidth = 1,
   dividerColor,
-  selectedValue,
+  selectedValue = 0,
   onValueChange,
+  data = [],
 }: WheelNumberPickerProps): ReactElement {
-  const [data, setData] = useState<number[]>([]);
-  const [value, setValue] = useState<number>(selectedValue || minValue);
+  const [dataArray, setDataArray] = useState<dataType[]>([]);
+  const [value, setValue] = useState<number | string>(selectedValue);
 
   const flatListRef = useRef<FlatList>(null);
   const currentYOffset = useRef<number>(0);
-  const valueArray = useRef<number[]>([]);
-  const numberOfValue = useRef<number>(maxValue - minValue + 1);
-  const initialOffset = useRef<number>((maxValue - minValue + 0.5) * height);
+  const numberOfValue = useRef<number>(data.length);
+  const initialOffset = useRef<number>((data.length - 0.5) * height);
 
-  // initialize number array
+  // initialize array
   useEffect(() => {
-    valueArray.current = [];
-    for (let i = minValue; i <= maxValue; i++) {
-      valueArray.current.push(i);
-    }
-    setData([
-      ...valueArray.current,
-      ...valueArray.current,
-      ...valueArray.current,
-    ]);
+    setDataArray([...data, ...data, ...data]);
   }, []);
 
   // set offset in center of list when rendered
   useEffect(() => {
-    if (data.length === 0) return;
+    if (dataArray.length === 0) return;
     let offset = initialOffset.current;
     if (selectedValue) {
-      const selectedValueIndex = valueArray.current.indexOf(selectedValue);
+      const selectedValueIndex = data.findIndex(
+        (obj) => obj.value === selectedValue
+      );
       if (selectedValueIndex !== -1) {
         offset += height * selectedValueIndex;
       }
@@ -73,7 +71,7 @@ function WheelNumberPicker({
       animated: false,
     });
     currentYOffset.current = initialOffset.current;
-  }, [data.length]);
+  }, [dataArray.length]);
 
   // for onValueChange props
   useEffect(() => {
@@ -88,7 +86,7 @@ function WheelNumberPicker({
     const offsetY = nativeEvent.contentOffset.y;
     let index = Math.ceil((offsetY % initialOffset.current) / height);
     index = index < numberOfValue.current ? index : numberOfValue.current - 1;
-    const selectedValue = valueArray.current[index];
+    const selectedValue = data[index].value;
     if (value !== selectedValue) {
       setValue(selectedValue);
     }
@@ -96,10 +94,10 @@ function WheelNumberPicker({
     if (offsetY < currentYOffset.current) {
       if (offsetY <= initialOffset.current - height) {
         flatListRef.current?.scrollToOffset({
-          offset: offsetY + height * (maxValue - minValue + 1),
+          offset: offsetY + height * numberOfValue.current,
           animated: false,
         });
-        currentYOffset.current = offsetY + height * (maxValue - minValue + 1);
+        currentYOffset.current = offsetY + height * numberOfValue.current;
         return;
       }
     }
@@ -107,10 +105,10 @@ function WheelNumberPicker({
     if (offsetY > currentYOffset.current) {
       if (offsetY > initialOffset.current + height) {
         flatListRef.current?.scrollToOffset({
-          offset: offsetY - height * (maxValue - minValue + 1),
+          offset: offsetY - height * numberOfValue.current,
           animated: false,
         });
-        currentYOffset.current = offsetY - height * (maxValue - minValue + 1);
+        currentYOffset.current = offsetY - height * numberOfValue.current;
         return;
       }
     }
@@ -119,27 +117,21 @@ function WheelNumberPicker({
   };
 
   return (
-    <>
+    <View style={{ alignItems: "center", justifyContent: "center" }}>
       {/* view component for picker divider */}
       <View
         style={{
           position: "absolute",
+          borderTopWidth: dividerWidth,
+          borderBottomWidth: dividerWidth,
+          borderColor: dividerColor,
+          height: height,
+          width: height * 1.2,
         }}
-      >
-        <View
-          style={{
-            marginTop: height / 1.5,
-            borderTopWidth: dividerWidth,
-            borderBottomWidth: dividerWidth,
-            borderColor: dividerColor,
-            height: height,
-            width: height * 1.2,
-          }}
-        />
-      </View>
+      />
       <View style={{ width: height * 1.2, height: height * 2 }}>
         <FlatList
-          data={data}
+          data={dataArray}
           onScroll={onScroll}
           ref={flatListRef}
           showsVerticalScrollIndicator={false}
@@ -164,8 +156,10 @@ function WheelNumberPicker({
                   justifyContent: "center",
                 }}
               >
-                {item === value ? (
-                  <Text style={[textStyle, selectedTextStyle]}>{item}</Text>
+                {item.value === value ? (
+                  <Text style={[textStyle, selectedTextStyle]}>
+                    {item.label}
+                  </Text>
                 ) : (
                   <Text
                     style={[
@@ -174,7 +168,7 @@ function WheelNumberPicker({
                       unselectedTextStyle,
                     ]}
                   >
-                    {item}
+                    {item.label}
                   </Text>
                 )}
               </View>
@@ -182,7 +176,7 @@ function WheelNumberPicker({
           }}
         />
       </View>
-    </>
+    </View>
   );
 }
 
