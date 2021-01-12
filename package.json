@@ -1,6 +1,6 @@
 {
   "name": "react-native-circular-wheel-picker",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "simple circular picker using scroll",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
